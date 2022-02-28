@@ -10,8 +10,9 @@ import queue
 
 
 class CX:
+    # 实例化请传入手机号和密码
     def __init__(self, phonenums, password):
-        self.acc = phonenums
+        self.acc = phonenums 
         self.pwd = password
         self.mappid = None
         self.incode = None
@@ -42,6 +43,7 @@ class CX:
         self.get_fidEnc()
         self.get_all_room_and_seat()
 
+    # 获取cookies
     def login(self):
         c_url = 'https://passport2.chaoxing.com/mlogin?' \
                 'loginType=1&' \
@@ -59,8 +61,8 @@ class CX:
         s_url = 'https://office.chaoxing.com/front/third/apps/seat/index'
         self.session.get(s_url)
 
-    def get_role(self):
-        # 身份获取
+    # 身份获取
+    def get_role(self):  
         role = self.session.get(url='https://office.chaoxing.com/data/apps/seat/person/role').json()
         # print(role)
         try:
@@ -72,14 +74,16 @@ class CX:
         except KeyError:
             print('服务器未响应正确值，请重试')
 
+    # 无聊的信息
     def get_wx(self):
         reserve_wx_config = self.session.post(url='https://office.chaoxing.com/data/apps/reserve/wx/config').json()
         seatIndex = self.session.get(url='https://office.chaoxing.com/data/apps/seat/index').json()
         seatConfig = self.session.get(url='https://office.chaoxing.com/data/apps/seat/config').json()
-        print(reserve_wx_config)
+        # print(reserve_wx_config)
         # print(seatIndex)
         # print(seatConfig)
 
+    # 获取学校id
     def get_fidEnc(self):
         data = {
             'searchName': '',
@@ -141,10 +145,12 @@ class CX:
                                         f'id={self.get_my_seat_id()}')
         print(response.json())
 
+    # 时间戳转换1
     @classmethod
     def t_time(cls, timestamp):
         return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(int(str(timestamp)[0:10])))
-
+   
+    # 时间戳转换2
     @classmethod
     def t_second(cls, timestamp):
         if timestamp:
@@ -181,7 +187,7 @@ class CX:
         seat_result = response.json()
         print(seat_result)
 
-    # 标准时间
+    # 标准时间转换
     @classmethod
     def get_date(cls):
         return time.strftime('%a %b %d %Y %I:%M:%S GMT+0800 ', time.localtime(time.time())) + '(中国标准时间)'
@@ -253,7 +259,7 @@ class CX:
         for index in response.json()['data']['addressArr']:
             print(index['location'], index['offset'])
 
-    # 获取到最近一次预约的座位ID
+    # 获取到最近一次预约座位ID
     def get_my_seat_id(self):
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/reservelist?'
                                         'indexId=0&'
