@@ -31,7 +31,7 @@ class CX:
             'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_1 like Mac OS X) AppleWebKit/603.1.30 '
                           '(KHTML, like Gecko) Version/10.0 Mobile/14E304 Safari/602.1',
         }
-        self.login()
+        self.login()                    # 第一步 必须
         self.status = {
             '0': '待履约',
             '1': '学习中',
@@ -40,10 +40,10 @@ class CX:
             '5': '被监督中',
             '7': '已取消',
         }
-        self.get_fidEnc()
-        self.get_all_room_and_seat()
+        self.get_fidEnc()               # 第二步 必须
+        self.get_all_room_and_seat()    # 这一步看需求 非必须
 
-    # 获取cookies
+    # 获取cookies 
     def login(self):
         c_url = 'https://passport2.chaoxing.com/mlogin?' \
                 'loginType=1&' \
@@ -61,7 +61,7 @@ class CX:
         s_url = 'https://office.chaoxing.com/front/third/apps/seat/index'
         self.session.get(s_url)
 
-    # 身份获取
+    # 身份获取 官方的接口 自行研究
     def get_role(self):  
         role = self.session.get(url='https://office.chaoxing.com/data/apps/seat/person/role').json()
         # print(role)
@@ -163,7 +163,7 @@ class CX:
             return str(s) + "秒"
         return "0秒"
 
-    # 预约座位
+    # 预约座位 需要自己修改
     def submit(self):
         # 获取token
         response = self.session.get(url='https://office.chaoxing.com/front/apps/seat/list?'
@@ -171,18 +171,18 @@ class CX:
         pageToken = re.compile(r"&pageToken=' \+ '(.*)' \+ '&").findall(response.text)[0]
         # print(pageToken)
         response = self.session.get(url='https://office.chaoxing.com/front/apps/seat/select?'
-                                    'id=6296&'
-                                    'day=2022-03-01&'
-                                    'backLevel=2&'
+                                    'id=6296&'          # 房间id roomId 可以从self.room_id_name获取 请自行发挥
+                                    'day=2022-03-01&'   # 预约时间 上下需保持一致
+                                    'backLevel=2&'      # 必须的参数2
                                     f'pageToken={pageToken}')
         token = re.compile("token: '(.*)'").findall(response.text)[0]
         # print(token)
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/submit?'
-                                    'roomId=6296&'
-                                    'startTime=9%3A00&'
-                                    'endTime=11%3A00&'
-                                    'day=2022-03-01&'
-                                    'seatNum=148&'
+                                    'roomId=6296&'      # 房间id roomId 上下需保持一致
+                                    'startTime=9%3A00&' # 开始时间%3A代表: 自行替换9（小时）和后面00（分钟） 必须
+                                    'endTime=11%3A00&'  # 结束时间 规则同上
+                                    'day=2022-03-01&'   # 预约时间 上下需保持一致
+                                    'seatNum=148&'      # 座位数字 与桌上贴纸一致
                                     f'token={token}')
         seat_result = response.json()
         print(seat_result)
@@ -208,7 +208,7 @@ class CX:
             # print(index['id'], index['capacity'], index['deptId'], index['firstLevelName'],
             #       index['secondLevelName'], index['thirdLevelName'])
 
-    # 获取学习人数分布
+    # 获取学习人数分布 多线程 2000座约10s
     def get_study_info(self):
         q = queue.Queue()
         for item in self.all_seat:
@@ -227,13 +227,13 @@ class CX:
             print(self.db[index['id']], ' ', '\t', self.room_id_capacity[index['id']] - self.db[index['id']], '\t',
                   self.room_id_capacity[index['id']], '\t', self.room_id_name[index['id']])
         print(self.db['sb'], '\t', self.db['nb'], '\t', len(self.all_seat))
-        # 筛选座位
+        # 筛选座位 修改145可以看所有楼层的145座位信息 自行发挥
         # for index in self.all_seat:
         #     if index['seatNum'] == '145':
         #         print(index['seatNum'], index['id'], index['roomId'], self.room_id_name[index['roomId']])
         #     continue
 
-    # 获取座位详细信息
+    # 获取座位详细信息 配合get_study_info
     def get_seat_info(self, q: queue.Queue):
         while True:
             seat = q.get()
@@ -252,14 +252,14 @@ class CX:
             if q.empty():
                 break
 
-    # 查询签到位置范围
+    # 查询签到位置范围 没什么卵用 但是官方给了接口 那就安排上
     def get_sign_addr(self):
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/address?'
                                     f'deptId={self.deptId}')
         for index in response.json()['data']['addressArr']:
             print(index['location'], index['offset'])
 
-    # 获取到最近一次预约座位ID
+    # 获取到最近一次预约座位ID 默认的取消 签到 暂离都是默认这个 请自行发挥
     def get_my_seat_id(self):
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/reservelist?'
                                         'indexId=0&'
