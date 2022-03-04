@@ -17,7 +17,7 @@
     "key":"密码"
 }
 
- # return
+ # response
 {
     "msg": "不在签到时间内无法签到",
     "value": "True"
