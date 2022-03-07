@@ -74,7 +74,7 @@ class CX:
         except KeyError:
             print('服务器未响应正确值，请重试')
 
-    # 无聊的信息
+    # 其他的无关信息
     def get_wx(self):
         reserve_wx_config = self.session.post(url='https://office.chaoxing.com/data/apps/reserve/wx/config').json()
         seatIndex = self.session.get(url='https://office.chaoxing.com/data/apps/seat/index').json()
@@ -90,22 +90,24 @@ class CX:
             '_t': self.get_date()
         }
         res = self.session.post(url='https://i.chaoxing.com/base/cacheUserOrg', data=data)
-        print(res.json()["site"][0]['schoolname'], res.json()["site"][1]['schoolname'])
+        print(res.json()["site"][0]['schoolname'], res.json()["site"][1]['schoolname'])  # 默认显示单位的前两个名称如果是多个单位请自行修改
         for index in res.json()["site"]:
             fid = index['fid']
             res = self.session.get(url='https://uc.chaoxing.com/mobileSet/homePage?'
                                        f'fid={fid}')
             selector = etree.HTML(res.text)
-            mappid = selector.xpath('/html/body/div[1]/div[3]/ul/li[1]/@onclick')
+            mappid = selector.xpath('/html/body/div[1]/div[3]/ul/li[1]/@onclick') # ☆ 注意 这一步可能需要调整 否则不能正常获取到mappid 每个学校不一样此处就没有用RE ☆
             if mappid:
                 self.mappid = mappid[0].split('(')[1].split(',')[0]
         self.incode = self.session.cookies.get_dict()['wfwIncode']
         url = f'https://v1.chaoxing.com/mobile/openRecentApp?incode={self.incode}&mappId={self.mappid}'
         res = self.session.get(url=url, allow_redirects=False)
-        self.deptIdEnc = re.compile("fidEnc%3D(.*?)%").findall(res.headers['Location'])[0]
+        # 每个学校的deptIdEnc值是固定的，如果是为只为你的学校提供服务请直接将deptIdEnc保存！不需要再执行get_fidEnc()方法了
+        self.deptIdEnc = re.compile("fidEnc%3D(.*?)%").findall(res.headers['Location'])[0]  
 
     # 获全部预约记录
     def get_seat_reservation_info(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/reservelist?'
                                         'indexId=0&'
                                         'pageSize=100&'
@@ -123,24 +125,28 @@ class CX:
 
     # 签到
     def sign(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/sign?'
                                         f'id={self.get_my_seat_id()}')
         print(response.json())
 
     # 暂离
     def leave(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/leave?'
                                         f'id={self.get_my_seat_id()}')
         print(response.json())
 
     # 退座
     def signback(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/signback?'
                                         f'id={self.get_my_seat_id()}')
         print(response.json())
 
     # 取消
     def cancel(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/cancel?'
                                         f'id={self.get_my_seat_id()}')
         print(response.json())
@@ -165,6 +171,7 @@ class CX:
 
     # 预约座位 需要自己修改
     def submit(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine且不需要第一步获取list。有可能需要提供seatId的值
         # 获取token
         response = self.session.get(url='https://office.chaoxing.com/front/apps/seat/list?'
                                     f'deptIdEnc={self.deptIdEnc}')
@@ -194,6 +201,7 @@ class CX:
 
     # 获取图书馆所有的房间和房间
     def get_all_room_and_seat(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine，且可能需要附带seatId的值
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/room/list?'
                                     f'deptIdEnc={self.deptIdEnc}')
         self.room = response.json()['data']['seatRoomList']
@@ -209,6 +217,7 @@ class CX:
             #       index['secondLevelName'], index['thirdLevelName'])
 
     # 获取学习人数分布 多线程 2000座约10s
+    # 注意 老版本的系统接口可能不能获取到
     def get_study_info(self):
         q = queue.Queue()
         for item in self.all_seat:
@@ -237,6 +246,7 @@ class CX:
     def get_seat_info(self, q: queue.Queue):
         while True:
             seat = q.get()
+            # 注意 老版本的系统不支持此接口
             response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/reserve/info?'
                                             'id={0}&seatNum={1}'.format(seat['roomId'], seat['seatNum'])).json()
             # print(response)
@@ -261,6 +271,7 @@ class CX:
 
     # 获取到最近一次预约座位ID 默认的取消 签到 暂离都是默认这个 请自行发挥
     def get_my_seat_id(self):
+        # 注意 老版本的系统需要将url中的seat改为seatengine
         response = self.session.get(url='https://office.chaoxing.com/data/apps/seat/reservelist?'
                                         'indexId=0&'
                                         'pageSize=100&'
